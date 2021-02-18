@@ -56,32 +56,30 @@ extension HBRouter {
     }
 
     /// Add path for closure returning type conforming to ResponseFutureEncodable
-    @discardableResult public func on<R: HBResponseFutureGenerator>(
+    @discardableResult public func on<R: HBResponseGenerator>(
         _ path: String,
         method: HTTPMethod,
-        use closure: @escaping (HBRequest) -> R
+        use closure: @escaping (HBRequest) async throws -> R
     ) -> Self {
         let responder = HBCallbackResponder { request in
             let buffer = try await request.body.consumeBody(on: request.eventLoop).get()
             request.body = .byteBuffer(buffer)
-            return try await closure(request).responseFuture(from: request)
-                .apply(patch: request.optionalResponse)
+            return try await closure(request).response(from: request).apply(patch: request.optionalResponse)
         }
         add(path, method: method, responder: responder)
         return self
     }
 
     /// Add path for closure returning type conforming to ResponseFutureEncodable
-    @discardableResult public func onStreaming<R: HBResponseFutureGenerator>(
+    @discardableResult public func onStreaming<R: HBResponseGenerator>(
         _ path: String,
         method: HTTPMethod,
-        use closure: @escaping (HBRequest) -> R
+        use closure: @escaping (HBRequest) async throws -> R
     ) -> Self {
         let responder = HBCallbackResponder { request in
             let streamer = request.body.streamBody(on: request.eventLoop)
             request.body = .stream(streamer)
-            return try await closure(request).responseFuture(from: request)
-                .apply(patch: request.optionalResponse)
+            return try await closure(request).response(from: request).apply(patch: request.optionalResponse)
         }
         add(path, method: method, responder: responder)
         return self

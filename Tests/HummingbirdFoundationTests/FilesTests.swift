@@ -72,10 +72,10 @@ class HummingbirdFilesTests: XCTestCase {
     func testWrite() throws {
         let filename = "testWrite.txt"
         let app = HBApplication(testing: .live)
-        app.router.put("store") { request -> EventLoopFuture<HTTPResponseStatus> in
+        app.router.put("store") { request -> HTTPResponseStatus in
             let fileIO = HBFileIO(application: request.application)
-            return fileIO.writeFile(contents: request.body, path: filename, context: request.context)
-                .map { .ok }
+            return try await fileIO.writeFile(contents: request.body, path: filename, context: request.context)
+                .map { .ok }.get()
         }
 
         app.XCTStart()
@@ -95,10 +95,10 @@ class HummingbirdFilesTests: XCTestCase {
     func testWriteLargeFile() throws {
         let filename = "testWriteLargeFile.txt"
         let app = HBApplication(testing: .live)
-        app.router.put("store") { request -> EventLoopFuture<HTTPResponseStatus> in
+        app.router.put("store") { request -> HTTPResponseStatus in
             let fileIO = HBFileIO(application: request.application)
-            return fileIO.writeFile(contents: request.body, path: filename, context: request.context)
-                .map { .ok }
+            return try await fileIO.writeFile(contents: request.body, path: filename, context: request.context)
+                .map { .ok }.get()
         }
 
         app.XCTStart()

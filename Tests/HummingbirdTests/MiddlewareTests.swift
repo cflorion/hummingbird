@@ -112,8 +112,8 @@ final class MiddlewareTests: XCTestCase {
     func testRouteLoggingMiddleware() {
         let app = HBApplication(testing: .live)
         app.middleware.add(HBLogRequestsMiddleware(.debug))
-        app.router.put("/hello") { request -> EventLoopFuture<String> in
-            return request.failure(.badRequest)
+        app.router.put("/hello") { request -> String in
+            throw HBHTTPError(.badRequest)
         }
         app.XCTStart()
         defer { app.XCTStop() }
@@ -125,8 +125,8 @@ final class MiddlewareTests: XCTestCase {
     func testMetricsMiddleware() {
         let app = HBApplication(testing: .live)
         app.middleware.add(HBMetricsMiddleware())
-        app.router.delete("/hello") { request -> EventLoopFuture<String> in
-            return request.failure(.badRequest)
+        app.router.delete("/hello") { request -> String in
+            throw HBHTTPError(.badRequest)
         }
         app.XCTStart()
         defer { app.XCTStop() }

@@ -81,7 +81,7 @@ final class RouterTests: XCTestCase {
             .add(middleware: TestMiddleware())
             .group("/group")
             .get { request in
-                return request.success("hello")
+                return try await request.success("hello").get()
             }
         app.XCTStart()
         defer { app.XCTStop() }

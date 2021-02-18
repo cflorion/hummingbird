@@ -12,9 +12,9 @@ final class ApplicationTests: XCTestCase {
 
     func testGetRoute() throws {
         let app = HBApplication(testing: .live)
-        app.router.get("/hello") { request -> EventLoopFuture<ByteBuffer> in
+        app.router.get("/hello") { request -> ByteBuffer in
             let buffer = request.allocator.buffer(string: "GET: Hello")
-            return request.eventLoop.makeSucceededFuture(buffer)
+            return try await request.eventLoop.makeSucceededFuture(buffer).get()
         }
         app.XCTStart()
         defer { app.XCTStop() }
@@ -128,9 +128,9 @@ final class ApplicationTests: XCTestCase {
 
     func testQueryRoute() {
         let app = HBApplication(testing: .live)
-        app.router.post("/query") { request -> EventLoopFuture<ByteBuffer> in
+        app.router.post("/query") { request -> ByteBuffer in
             let buffer = request.allocator.buffer(string: request.uri.queryParameters["test"].map { String($0) } ?? "")
-            return request.eventLoop.makeSucceededFuture(buffer)
+            return buffer
         }
         app.XCTStart()
         defer { app.XCTStop() }
@@ -159,8 +159,22 @@ final class ApplicationTests: XCTestCase {
 
     func testEventLoopFutureArray() {
         let app = HBApplication(testing: .live)
-        app.router.patch("array") { request -> EventLoopFuture<[String]> in
-            return request.success(["yes", "no"])
+        app.router.patch("array") { request -> [String] in
+            return try await request.success(["yes", "no"]).get()
+        }
+        app.XCTStart()
+        defer { app.XCTStop() }
+
+        app.XCTExecute(uri: "/array", method: .PATCH) { response in
+            let body = try XCTUnwrap(response.body)
+            XCTAssertEqual(String(buffer: body), "[\"yes\", \"no\"]")
+        }
+    }
+
+    func testEventLoopFutureArrayAsync() {
+        let app = HBApplication(testing: .live)
+        app.router.patch("array") { request -> [String] in
+            return try await request.success(["yes", "no"]).get()
         }
         app.XCTStart()
         defer { app.XCTStop() }
