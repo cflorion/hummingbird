@@ -6,10 +6,9 @@ public struct HBDateResponseMiddleware: HBMiddleware {
     public init() {}
 
     /// Add "Date" header after request has been processed
-    public func apply(to request: HBRequest, next: HBResponder) -> EventLoopFuture<HBResponse> {
-        next.respond(to: request).map { response in
-            response.headers.replaceOrAdd(name: "Date", value: request.eventLoopStorage.dateCache.currentDate)
-            return response
-        }
+    public func apply(to request: HBRequest, next: HBResponder) async throws -> HBResponse {
+        let response = try await next.respond(to: request)
+        response.headers.replaceOrAdd(name: "Date", value: request.eventLoopStorage.dateCache.currentDate)
+        return response
     }
 }

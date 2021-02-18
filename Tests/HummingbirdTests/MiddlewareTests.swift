@@ -5,14 +5,13 @@ import XCTest
 final class MiddlewareTests: XCTestCase {
     func testMiddleware() {
         struct TestMiddleware: HBMiddleware {
-            func apply(to request: HBRequest, next: HBResponder) -> EventLoopFuture<HBResponse> {
-                return next.respond(to: request).map { response in
-                    response.headers.replaceOrAdd(name: "middleware", value: "TestMiddleware")
-                    return response
-                }
+            func apply(to request: HBRequest, next: HBResponder) async throws -> HBResponse {
+                let response = try await next.respond(to: request)
+                response.headers.replaceOrAdd(name: "middleware", value: "TestMiddleware")
+                return response
             }
         }
-        let app = HBApplication(testing: .embedded)
+        let app = HBApplication(testing: .live)
         app.middleware.add(TestMiddleware())
         app.router.get("/hello") { _ -> String in
             return "Hello"
@@ -28,14 +27,13 @@ final class MiddlewareTests: XCTestCase {
     func testMiddlewareOrder() {
         struct TestMiddleware: HBMiddleware {
             let string: String
-            func apply(to request: HBRequest, next: HBResponder) -> EventLoopFuture<HBResponse> {
-                return next.respond(to: request).map { response in
-                    response.headers.add(name: "middleware", value: string)
-                    return response
-                }
+            func apply(to request: HBRequest, next: HBResponder) async throws -> HBResponse {
+                let response = try await next.respond(to: request)
+                response.headers.add(name: "middleware", value: string)
+                return response
             }
         }
-        let app = HBApplication(testing: .embedded)
+        let app = HBApplication(testing: .live)
         app.middleware.add(TestMiddleware(string: "first"))
         app.middleware.add(TestMiddleware(string: "second"))
         app.router.get("/hello") { _ -> String in
@@ -52,7 +50,7 @@ final class MiddlewareTests: XCTestCase {
     }
 
     func testCORSUseOrigin() {
-        let app = HBApplication(testing: .embedded)
+        let app = HBApplication(testing: .live)
         app.middleware.add(HBCORSMiddleware())
         app.router.get("/hello") { _ -> String in
             return "Hello"
@@ -67,7 +65,7 @@ final class MiddlewareTests: XCTestCase {
     }
 
     func testCORSUseAll() {
-        let app = HBApplication(testing: .embedded)
+        let app = HBApplication(testing: .live)
         app.middleware.add(HBCORSMiddleware(allowOrigin: .all))
         app.router.get("/hello") { _ -> String in
             return "Hello"
@@ -82,7 +80,7 @@ final class MiddlewareTests: XCTestCase {
     }
 
     func testCORSOptions() {
-        let app = HBApplication(testing: .embedded)
+        let app = HBApplication(testing: .live)
         app.middleware.add(HBCORSMiddleware(
             allowOrigin: .all,
             allowHeaders: ["content-type", "authorization"],
@@ -112,7 +110,7 @@ final class MiddlewareTests: XCTestCase {
     }
 
     func testRouteLoggingMiddleware() {
-        let app = HBApplication(testing: .embedded)
+        let app = HBApplication(testing: .live)
         app.middleware.add(HBLogRequestsMiddleware(.debug))
         app.router.put("/hello") { request -> EventLoopFuture<String> in
             return request.failure(.badRequest)
@@ -125,7 +123,7 @@ final class MiddlewareTests: XCTestCase {
     }
 
     func testMetricsMiddleware() {
-        let app = HBApplication(testing: .embedded)
+        let app = HBApplication(testing: .live)
         app.middleware.add(HBMetricsMiddleware())
         app.router.delete("/hello") { request -> EventLoopFuture<String> in
             return request.failure(.badRequest)

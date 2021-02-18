@@ -10,12 +10,12 @@ public struct HBLogRequestsMiddleware: HBMiddleware {
         self.includeHeaders = includeHeaders
     }
 
-    public func apply(to request: HBRequest, next: HBResponder) -> EventLoopFuture<HBResponse> {
+    public func apply(to request: HBRequest, next: HBResponder) async throws -> HBResponse {
         if self.includeHeaders {
             request.logger.log(level: self.logLevel, "\(request.headers)")
         } else {
             request.logger.log(level: self.logLevel, "")
         }
-        return next.respond(to: request)
+        return try await next.respond(to: request)
     }
 }

@@ -11,7 +11,7 @@ final class ApplicationTests: XCTestCase {
     }
 
     func testGetRoute() throws {
-        let app = HBApplication(testing: .embedded)
+        let app = HBApplication(testing: .live)
         app.router.get("/hello") { request -> EventLoopFuture<ByteBuffer> in
             let buffer = request.allocator.buffer(string: "GET: Hello")
             return request.eventLoop.makeSucceededFuture(buffer)
@@ -28,7 +28,7 @@ final class ApplicationTests: XCTestCase {
     }
 
     func testHTTPStatusRoute() {
-        let app = HBApplication(testing: .embedded)
+        let app = HBApplication(testing: .live)
         app.router.get("/accepted") { _ -> HTTPResponseStatus in
             return .accepted
         }
@@ -41,7 +41,7 @@ final class ApplicationTests: XCTestCase {
     }
 
     func testStandardHeaders() {
-        let app = HBApplication(testing: .embedded)
+        let app = HBApplication(testing: .live)
         app.router.get("/hello") { _ in
             return "Hello"
         }
@@ -55,7 +55,7 @@ final class ApplicationTests: XCTestCase {
     }
 
     func testServerHeaders() {
-        let app = HBApplication(testing: .embedded, configuration: .init(serverName: "Hummingbird"))
+        let app = HBApplication(testing: .live, configuration: .init(serverName: "Hummingbird"))
         app.router.get("/hello") { _ in
             return "Hello"
         }
@@ -68,7 +68,7 @@ final class ApplicationTests: XCTestCase {
     }
 
     func testPostRoute() {
-        let app = HBApplication(testing: .embedded)
+        let app = HBApplication(testing: .live)
         app.router.post("/hello") { _ -> String in
             return "POST: Hello"
         }
@@ -84,7 +84,7 @@ final class ApplicationTests: XCTestCase {
     }
 
     func testMultipleMethods() {
-        let app = HBApplication(testing: .embedded)
+        let app = HBApplication(testing: .live)
         app.router.post("/hello") { _ -> String in
             return "POST"
         }
@@ -105,7 +105,7 @@ final class ApplicationTests: XCTestCase {
     }
 
     func testMultipleGroupMethods() {
-        let app = HBApplication(testing: .embedded)
+        let app = HBApplication(testing: .live)
         app.router.group("hello")
             .post { _ -> String in
                 return "POST"
@@ -127,7 +127,7 @@ final class ApplicationTests: XCTestCase {
     }
 
     func testQueryRoute() {
-        let app = HBApplication(testing: .embedded)
+        let app = HBApplication(testing: .live)
         app.router.post("/query") { request -> EventLoopFuture<ByteBuffer> in
             let buffer = request.allocator.buffer(string: request.uri.queryParameters["test"].map { String($0) } ?? "")
             return request.eventLoop.makeSucceededFuture(buffer)
@@ -144,7 +144,7 @@ final class ApplicationTests: XCTestCase {
     }
 
     func testArray() {
-        let app = HBApplication(testing: .embedded)
+        let app = HBApplication(testing: .live)
         app.router.get("array") { _ -> [String] in
             return ["yes", "no"]
         }
@@ -158,7 +158,7 @@ final class ApplicationTests: XCTestCase {
     }
 
     func testEventLoopFutureArray() {
-        let app = HBApplication(testing: .embedded)
+        let app = HBApplication(testing: .live)
         app.router.patch("array") { request -> EventLoopFuture<[String]> in
             return request.success(["yes", "no"])
         }
@@ -172,7 +172,7 @@ final class ApplicationTests: XCTestCase {
     }
 
     func testResponseBody() {
-        let app = HBApplication(testing: .embedded)
+        let app = HBApplication(testing: .live)
         app.router
             .group("/echo-body")
             .post { request -> HBResponse in
@@ -189,7 +189,7 @@ final class ApplicationTests: XCTestCase {
     }
 
     func testOptional() {
-        let app = HBApplication(testing: .embedded)
+        let app = HBApplication(testing: .live)
         app.router
             .group("/echo-body")
             .post { request -> ByteBuffer? in
@@ -213,7 +213,7 @@ final class ApplicationTests: XCTestCase {
             let first: String
             let last: String
         }
-        let app = HBApplication(testing: .embedded)
+        let app = HBApplication(testing: .live)
         app.router
             .group("/name")
             .patch { _ -> Name? in
@@ -229,7 +229,7 @@ final class ApplicationTests: XCTestCase {
     }
 
     func testEditResponse() throws {
-        let app = HBApplication(testing: .embedded)
+        let app = HBApplication(testing: .live)
         app.router.delete("/hello") { request -> String in
             request.response.headers.add(name: "test", value: "value")
             request.response.status = .imATeapot

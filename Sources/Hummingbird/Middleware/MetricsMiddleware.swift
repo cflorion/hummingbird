@@ -8,7 +8,7 @@ import Metrics
 public struct HBMetricsMiddleware: HBMiddleware {
     public init() {}
 
-    public func apply(to request: HBRequest, next: HBResponder) -> EventLoopFuture<HBResponse> {
+    public func apply(to request: HBRequest, next: HBResponder) async throws -> HBResponse {
         let dimensions: [(String, String)] = [
             ("hb_uri", request.uri.description),
             ("hb_method", request.method.rawValue),
@@ -17,15 +17,15 @@ public struct HBMetricsMiddleware: HBMiddleware {
 
         Counter(label: "hb_requests", dimensions: dimensions).increment()
 
-        return next.respond(to: request).map { response in
+        do {
+            let response = try await next.respond(to: request)
             Metrics.Timer(
                 label: "hb_request_duration",
                 dimensions: dimensions,
                 preferredDisplayUnit: .seconds
             ).recordNanoseconds(DispatchTime.now().uptimeNanoseconds - startTime)
             return response
-        }
-        .flatMapErrorThrowing { error in
+        } catch {
             Counter(label: "hb_errors", dimensions: dimensions).increment()
             throw error
         }

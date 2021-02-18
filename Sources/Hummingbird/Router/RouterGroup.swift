@@ -46,10 +46,9 @@ public struct HBRouterGroup: HBRouterMethods {
         use closure: @escaping (HBRequest) throws -> R
     ) -> Self {
         let responder = HBCallbackResponder { request in
-            request.body.consumeBody(on: request.eventLoop).flatMapThrowing { buffer in
-                request.body = .byteBuffer(buffer)
-                return try closure(request).response(from: request).apply(patch: request.optionalResponse)
-            }
+            let buffer = try await request.body.consumeBody(on: request.eventLoop).get()
+            request.body = .byteBuffer(buffer)
+            return try closure(request).response(from: request).apply(patch: request.optionalResponse)
         }
         let path = self.combinePaths(self.path, path)
         self.router.add(path, method: method, responder: self.middlewares.constructResponder(finalResponder: responder))
@@ -63,12 +62,10 @@ public struct HBRouterGroup: HBRouterMethods {
         use closure: @escaping (HBRequest) -> R
     ) -> Self {
         let responder = HBCallbackResponder { request in
-            request.body.consumeBody(on: request.eventLoop).flatMap { buffer in
-                request.body = .byteBuffer(buffer)
-                return closure(request).responseFuture(from: request)
-                    .map { $0.apply(patch: request.optionalResponse) }
-                    .hop(to: request.eventLoop)
-            }
+            let buffer = try await request.body.consumeBody(on: request.eventLoop).get()
+            request.body = .byteBuffer(buffer)
+            return try await closure(request).responseFuture(from: request)
+                .apply(patch: request.optionalResponse)
         }
         let path = self.combinePaths(self.path, path)
         self.router.add(path, method: method, responder: self.middlewares.constructResponder(finalResponder: responder))
@@ -84,9 +81,8 @@ public struct HBRouterGroup: HBRouterMethods {
         let responder = HBCallbackResponder { request in
             let streamer = request.body.streamBody(on: request.eventLoop)
             request.body = .stream(streamer)
-            return closure(request).responseFuture(from: request)
-                .map { $0.apply(patch: request.optionalResponse) }
-                .hop(to: request.eventLoop)
+            return try await closure(request).responseFuture(from: request)
+                .apply(patch: request.optionalResponse)
         }
         let path = self.combinePaths(self.path, path)
         self.router.add(path, method: method, responder: self.middlewares.constructResponder(finalResponder: responder))

@@ -13,7 +13,7 @@ class HummingbirdJSONTests: XCTestCase {
     struct Error: Swift.Error {}
 
     func testDecode() {
-        let app = HBApplication(testing: .embedded)
+        let app = HBApplication(testing: .live)
         app.decoder = JSONDecoder()
         app.router.put("/user") { request -> HTTPResponseStatus in
             guard let user = try? request.decode(as: User.self) else { throw HBHTTPError(.badRequest) }
@@ -32,7 +32,7 @@ class HummingbirdJSONTests: XCTestCase {
     }
 
     func testEncode() {
-        let app = HBApplication(testing: .embedded)
+        let app = HBApplication(testing: .live)
         app.encoder = JSONEncoder()
         app.router.get("/user") { _ -> User in
             return User(name: "John Smith", email: "john.smith@email.com", age: 25)
@@ -50,7 +50,7 @@ class HummingbirdJSONTests: XCTestCase {
     }
 
     func testEncode2() {
-        let app = HBApplication(testing: .embedded)
+        let app = HBApplication(testing: .live)
         app.encoder = JSONEncoder()
         app.router.get("/json") { _ in
             return ["message": "Hello, world!"]

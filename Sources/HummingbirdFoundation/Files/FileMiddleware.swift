@@ -33,33 +33,35 @@ public struct HBFileMiddleware: HBMiddleware {
         application.logger.info("FileMiddleware serving from \(workingFolder)/\(rootFolder)")
     }
 
-    public func apply(to request: HBRequest, next: HBResponder) -> EventLoopFuture<HBResponse> {
+    public func apply(to request: HBRequest, next: HBResponder) async throws -> HBResponse {
         // if next responder returns a 404 then check if file exists
-        return next.respond(to: request).flatMapError { error in
+        do {
+            return try await next.respond(to: request)
+        } catch {
             guard let httpError = error as? HBHTTPError, httpError.status == .notFound else {
-                return request.eventLoop.makeFailedFuture(error)
+                throw error
             }
 
             guard let path = request.uri.path.removingPercentEncoding else {
-                return request.eventLoop.makeFailedFuture(HBHTTPError(.badRequest))
+                throw HBHTTPError(.badRequest)
             }
 
             guard !path.contains("..") else {
-                return request.eventLoop.makeFailedFuture(HBHTTPError(.badRequest))
+                throw HBHTTPError(.badRequest)
             }
 
             let fullPath = rootFolder + path
 
             switch request.method {
             case .GET:
-                return fileIO.loadFile(path: fullPath, context: request.context)
-                    .map { HBResponse(status: .ok, body: $0) }
+                let body = try await fileIO.loadFile(path: fullPath, context: request.context)
+                return HBResponse(status: .ok, body: body)
 
             case .HEAD:
-                return fileIO.headFile(path: fullPath, context: request.context)
+                return try await fileIO.headFile(path: fullPath, context: request.context)
 
             default:
-                return request.eventLoop.makeFailedFuture(error)
+                throw error
             }
         }
     }

@@ -4,16 +4,15 @@ import XCTest
 
 final class RouterTests: XCTestCase {
     struct TestMiddleware: HBMiddleware {
-        func apply(to request: HBRequest, next: HBResponder) -> EventLoopFuture<HBResponse> {
-            return next.respond(to: request).map { response in
-                response.headers.replaceOrAdd(name: "middleware", value: "TestMiddleware")
-                return response
-            }
+        func apply(to request: HBRequest, next: HBResponder) async throws -> HBResponse {
+            let response = try await next.respond(to: request)
+            response.headers.replaceOrAdd(name: "middleware", value: "TestMiddleware")
+            return response
         }
     }
 
     func testEndpoint() {
-        let app = HBApplication(testing: .embedded)
+        let app = HBApplication(testing: .live)
         app.router
             .group("/endpoint")
             .get { _ in
@@ -37,7 +36,7 @@ final class RouterTests: XCTestCase {
     }
 
     func testGroupMiddleware() {
-        let app = HBApplication(testing: .embedded)
+        let app = HBApplication(testing: .live)
         app.router
             .group()
             .add(middleware: TestMiddleware())
@@ -60,7 +59,7 @@ final class RouterTests: XCTestCase {
     }
 
     func testEndpointMiddleware() {
-        let app = HBApplication(testing: .embedded)
+        let app = HBApplication(testing: .live)
         app.router
             .group("/group")
             .add(middleware: TestMiddleware())
@@ -76,7 +75,7 @@ final class RouterTests: XCTestCase {
     }
 
     func testGroupGroupMiddleware() {
-        let app = HBApplication(testing: .embedded)
+        let app = HBApplication(testing: .live)
         app.router
             .group("/test")
             .add(middleware: TestMiddleware())
@@ -93,7 +92,7 @@ final class RouterTests: XCTestCase {
     }
 
     func testParameters() {
-        let app = HBApplication(testing: .embedded)
+        let app = HBApplication(testing: .live)
         app.router
             .delete("/user/:id") { request -> String? in
                 return request.parameters.get("id", as: String.self)

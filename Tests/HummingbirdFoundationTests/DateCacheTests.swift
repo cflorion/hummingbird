@@ -6,7 +6,7 @@ import XCTest
 
 class HummingbirdDateTests: XCTestCase {
     func testGetDate() {
-        let app = HBApplication(testing: .embedded)
+        let app = HBApplication(testing: .live)
         app.addFoundation()
         app.router.get("date") { request in
             return request.eventLoopStorage.dateCache.currentDate
@@ -20,7 +20,7 @@ class HummingbirdDateTests: XCTestCase {
     }
 
     func testDateResponseMiddleware() {
-        let app = HBApplication(testing: .embedded)
+        let app = HBApplication(testing: .live)
         app.addFoundation()
         app.router.get("date") { _ in
             return "hello"

@@ -39,7 +39,17 @@ extension HBApplication {
             )
 
             // respond to request
-            return self.responder.respond(to: request)
+            let promise = context.eventLoop.makePromise(of: HBResponse.self)
+            _ = Task.runDetached {
+                do {
+                    let response = try await self.responder.respond(to: request)
+                    promise.succeed(response)
+                } catch {
+                    promise.fail(error)
+                }
+            }
+
+            return promise.futureResult
                 .map { response in
                     let responseHead = HTTPResponseHead(version: request.version, status: response.status, headers: response.headers)
                     return HBHTTPResponse(head: responseHead, body: response.body)

@@ -58,13 +58,13 @@ extension Optional: HBResponseGenerator where Wrapped: HBResponseGenerator {
 /// `EventLoopFuture<HBResponse>`.
 public protocol HBResponseFutureGenerator {
     /// Generate `EventLoopFuture` that will be fulfilled with the response
-    func responseFuture(from request: HBRequest) -> EventLoopFuture<HBResponse>
+    func responseFuture(from request: HBRequest) async throws -> HBResponse
 }
 
 /// Extend EventLoopFuture of a ResponseEncodable to conform to ResponseFutureEncodable
 extension EventLoopFuture: HBResponseFutureGenerator where Value: HBResponseGenerator {
     /// Generate `EventLoopFuture` that will be fulfilled with the response
-    public func responseFuture(from request: HBRequest) -> EventLoopFuture<HBResponse> {
-        return self.flatMapThrowing { try $0.response(from: request) }
+    public func responseFuture(from request: HBRequest) async throws -> HBResponse {
+        return try await self.get().response(from: request)
     }
 }
