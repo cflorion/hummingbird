@@ -23,20 +23,28 @@ let package = Package(
     ],
     targets: [
         .target(name: "CURLParser", dependencies: []),
-        .target(name: "Hummingbird", dependencies: [
-            .byName(name: "CURLParser"),
-            .product(name: "HummingbirdCore", package: "hummingbird-core"),
-            .product(name: "Lifecycle", package: "swift-service-lifecycle"),
-            .product(name: "LifecycleNIOCompat", package: "swift-service-lifecycle"),
-            .product(name: "Logging", package: "swift-log"),
-            .product(name: "Metrics", package: "swift-metrics"),
-            .product(name: "NIO", package: "swift-nio"),
-            .product(name: "NIOHTTP1", package: "swift-nio"),
-        ]),
-        .target(name: "HummingbirdFoundation", dependencies: [
-            .byName(name: "Hummingbird"),
-            .product(name: "NIOFoundationCompat", package: "swift-nio"),
-        ]),
+        .target(
+            name: "Hummingbird",
+            dependencies: [
+                .byName(name: "CURLParser"),
+                .product(name: "HummingbirdCore", package: "hummingbird-core"),
+                .product(name: "Lifecycle", package: "swift-service-lifecycle"),
+                .product(name: "LifecycleNIOCompat", package: "swift-service-lifecycle"),
+                .product(name: "Logging", package: "swift-log"),
+                .product(name: "Metrics", package: "swift-metrics"),
+                .product(name: "NIO", package: "swift-nio"),
+                .product(name: "NIOHTTP1", package: "swift-nio"),
+            ],
+            swiftSettings: [.unsafeFlags(["-Xfrontend", "-enable-experimental-concurrency"])]
+         ),
+        .target(
+            name: "HummingbirdFoundation",
+            dependencies: [
+                .byName(name: "Hummingbird"),
+                .product(name: "NIOFoundationCompat", package: "swift-nio"),
+            ],
+            swiftSettings: [.unsafeFlags(["-Xfrontend", "-enable-experimental-concurrency"])]
+        ),
         .target(name: "HummingbirdXCT", dependencies: [
             .byName(name: "Hummingbird"),
             .product(name: "NIO", package: "swift-nio"),
