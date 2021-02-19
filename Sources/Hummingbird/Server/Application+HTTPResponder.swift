@@ -30,6 +30,15 @@ extension HBApplication {
         ///   - context: context from ChannelHandler
         /// - Returns: response
         public func respond(to request: HBHTTPRequest, context: ChannelHandlerContext) -> EventLoopFuture<HBHTTPResponse> {
+            @asyncHandler func respond(to request: HBRequest, promise: EventLoopPromise<HBResponse>) {
+                do {
+                    let response = try await self.responder.respond(to: request)
+                    promise.succeed(response)
+                } catch {
+                    promise.fail(error)
+                }
+            }
+
             let request = HBRequest(
                 head: request.head,
                 body: request.body,
@@ -40,14 +49,7 @@ extension HBApplication {
 
             // respond to request
             let promise = context.eventLoop.makePromise(of: HBResponse.self)
-            _ = Task.runDetached {
-                do {
-                    let response = try await self.responder.respond(to: request)
-                    promise.succeed(response)
-                } catch {
-                    promise.fail(error)
-                }
-            }
+            respond(to: request, promise: promise)
 
             return promise.futureResult
                 .map { response in
