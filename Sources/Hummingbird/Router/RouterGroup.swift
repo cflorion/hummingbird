@@ -40,49 +40,26 @@ public struct HBRouterGroup: HBRouterMethods {
     }
 
     /// Add path for closure returning type conforming to ResponseFutureEncodable
-    @discardableResult public func on<R: HBResponseGenerator>(
+    @discardableResult public func on<Output: HBResponseGenerator>(
         _ path: String = "",
         method: HTTPMethod,
-        use closure: @escaping (HBRequest) throws -> R
+        body: HBBodyCollation = .collate,
+        use closure: @escaping (HBRequest) throws -> Output
     ) -> Self {
-        let responder = HBCallbackResponder { request in
-            let buffer = try await request.body.consumeBody(on: request.eventLoop).get()
-            request.body = .byteBuffer(buffer)
-            return try closure(request).response(from: request).apply(patch: request.optionalResponse)
-        }
+        let responder = constructResponder(body: body, use: closure)
         let path = self.combinePaths(self.path, path)
         self.router.add(path, method: method, responder: self.middlewares.constructResponder(finalResponder: responder))
         return self
     }
 
     /// Add path for closure returning type conforming to ResponseFutureEncodable
-    @discardableResult public func on<R: HBResponseGenerator>(
+    @discardableResult public func on<Output: HBResponseGenerator>(
         _ path: String = "",
         method: HTTPMethod,
-        use closure: @escaping (HBRequest) async throws -> R
+        body: HBBodyCollation = .collate,
+        use closure: @escaping (HBRequest) async throws -> Output
     ) -> Self {
-        let responder = HBCallbackResponder { request in
-            let buffer = try await request.body.consumeBody(on: request.eventLoop).get()
-            request.body = .byteBuffer(buffer)
-            return try await closure(request).response(from: request).apply(patch: request.optionalResponse)
-        }
-        let path = self.combinePaths(self.path, path)
-        self.router.add(path, method: method, responder: self.middlewares.constructResponder(finalResponder: responder))
-        return self
-    }
-
-    /// Add path for closure returning type conforming to ResponseFutureEncodable
-    @discardableResult public func onStreaming<R: HBResponseGenerator>(
-        _ path: String = "",
-        method: HTTPMethod,
-        use closure: @escaping (HBRequest) async throws -> R
-    ) -> Self {
-        let responder = HBCallbackResponder { request in
-            let streamer = request.body.streamBody(on: request.eventLoop)
-            request.body = .stream(streamer)
-            return try await closure(request).response(from: request)
-                .apply(patch: request.optionalResponse)
-        }
+        let responder = constructResponder(body: body, use: closure)
         let path = self.combinePaths(self.path, path)
         self.router.add(path, method: method, responder: self.middlewares.constructResponder(finalResponder: responder))
         return self

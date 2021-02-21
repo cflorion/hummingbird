@@ -133,5 +133,7 @@ final class MiddlewareTests: XCTestCase {
 
         app.XCTExecute(uri: "/hello", method: .DELETE) { _ in
         }
+        app.XCTExecute(uri: "/hello", method: .GET) { _ in
+        }
     }
 }

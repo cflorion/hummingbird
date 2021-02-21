@@ -7,7 +7,7 @@ import Darwin.C
 import CURLParser
 
 /// Swift interface to CURLParser
-public struct HBURL: CustomStringConvertible, ExpressibleByStringLiteral {
+public struct HBURL: CustomStringConvertible, ExpressibleByStringLiteral, Equatable {
     public struct Scheme: RawRepresentable, Equatable {
         private enum _Scheme: Substring {
             case http
@@ -38,24 +38,20 @@ public struct HBURL: CustomStringConvertible, ExpressibleByStringLiteral {
     }
 
     public let string: String
-
     public let scheme: Scheme?
-    public let host: Substring?
-    public let port: Int?
-    public let path: Substring
-    public let query: Substring?
-    public let fragment: Substring?
-    public var queryParameters: [Substring: Substring] {
-        guard let query = query else { return [:] }
-        let queries = query.split(separator: "&")
-        let queryKeyValues = queries.map { value -> (key: Substring, value: Substring) in
-            if let equals = value.firstIndex(of: "=") {
-                return (key: value[..<equals].removingPercentEncoding, value: value[value.index(after: equals)...].removingPercentEncoding)
-            }
-            return (key: value, value: "")
-        }
-        return [Substring: Substring].init(queryKeyValues) { lhs, _ in lhs }
-    }
+
+    public var host: String? { return self._host.map { String($0) }}
+    public var port: Int? { return self._port.map { Int($0) } ?? nil }
+    public var path: String { String(self._path) }
+    public var query: String? { return self._query.map { String($0) }}
+    public var fragment: String? { return self._fragment.map { String($0) }}
+    public var queryParameters: HBParameters { return .init(fromQuery: self._query) }
+
+    private let _host: Substring?
+    private let _port: Substring?
+    private let _path: Substring
+    private let _query: Substring?
+    private let _fragment: Substring?
 
     public var description: String { self.string }
 
@@ -69,15 +65,11 @@ public struct HBURL: CustomStringConvertible, ExpressibleByStringLiteral {
         } else {
             self.scheme = nil
         }
-        self.host = Self.substring(from: url.field_data.1, with: string)
-        if let port = Self.substring(from: url.field_data.2, with: string) {
-            self.port = Int(port)
-        } else {
-            self.port = nil
-        }
-        self.path = Self.substring(from: url.field_data.3, with: string)?.removingPercentEncoding ?? "/"
-        self.query = Self.substring(from: url.field_data.4, with: string)
-        self.fragment = Self.substring(from: url.field_data.5, with: string)
+        self._host = Self.substring(from: url.field_data.1, with: string)
+        self._port = Self.substring(from: url.field_data.2, with: string)
+        self._path = Self.substring(from: url.field_data.3, with: string)?.removingPercentEncoding ?? "/"
+        self._query = Self.substring(from: url.field_data.4, with: string)
+        self._fragment = Self.substring(from: url.field_data.5, with: string)
     }
 
     public init(stringLiteral value: String) {
@@ -127,5 +119,22 @@ private extension Substring {
         } catch {
             return self
         }
+    }
+}
+
+extension HBParameters {
+    init(fromQuery query: Substring?) {
+        guard let query = query else {
+            self.parameters = [:]
+            return
+        }
+        let queries = query.split(separator: "&")
+        let queryKeyValues = queries.map { value -> (key: Substring, value: Substring) in
+            if let equals = value.firstIndex(of: "=") {
+                return (key: value[..<equals].removingPercentEncoding, value: value[value.index(after: equals)...].removingPercentEncoding)
+            }
+            return (key: value, value: "")
+        }
+        self.parameters = [Substring: Substring].init(queryKeyValues) { lhs, _ in lhs }
     }
 }

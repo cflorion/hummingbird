@@ -10,15 +10,14 @@ public struct HBMetricsMiddleware: HBMiddleware {
 
     public func apply(to request: HBRequest, next: HBResponder) async throws -> HBResponse {
         let dimensions: [(String, String)] = [
-            ("hb_uri", request.uri.description),
+            ("hb_uri", request.uri.path),
             ("hb_method", request.method.rawValue),
         ]
         let startTime = DispatchTime.now().uptimeNanoseconds
 
-        Counter(label: "hb_requests", dimensions: dimensions).increment()
-
         do {
             let response = try await next.respond(to: request)
+            Counter(label: "hb_requests", dimensions: dimensions).increment()
             Metrics.Timer(
                 label: "hb_request_duration",
                 dimensions: dimensions,
@@ -26,6 +25,9 @@ public struct HBMetricsMiddleware: HBMiddleware {
             ).recordNanoseconds(DispatchTime.now().uptimeNanoseconds - startTime)
             return response
         } catch {
+            if let error = error as? HBHTTPError, error.status == .notFound {
+                throw error
+            }
             Counter(label: "hb_errors", dimensions: dimensions).increment()
             throw error
         }
