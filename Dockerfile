@@ -1,4 +1,4 @@
-FROM swift:5.3-focal
+FROM swiftlang/swift:nightly-focal
 
 WORKDIR /build
 
@@ -12,4 +12,4 @@ RUN swift package resolve
 # Copy entire repo into container
 COPY . .
 
-RUN swift test --sanitize=thread --enable-test-discovery
+RUN swift test --enable-test-discovery --sanitize=thread
