@@ -29,16 +29,7 @@ extension HBApplication {
         ///   - request: request
         ///   - context: context from ChannelHandler
         /// - Returns: response
-        public func respond(to request: HBHTTPRequest, context: ChannelHandlerContext) -> EventLoopFuture<HBHTTPResponse> {
-            @asyncHandler func respond(to request: HBRequest, promise: EventLoopPromise<HBResponse>) {
-                do {
-                    let response = try await self.responder.respond(to: request)
-                    promise.succeed(response)
-                } catch {
-                    promise.fail(error)
-                }
-            }
-
+        public func respond(to request: HBHTTPRequest, context: ChannelHandlerContext, onComplete: @escaping (Result<HBHTTPResponse, Error>) -> Void) {
             let request = HBRequest(
                 head: request.head,
                 body: request.body,
@@ -48,30 +39,17 @@ extension HBApplication {
             )
 
             // respond to request
-            let promise = context.eventLoop.makePromise(of: HBResponse.self)
-            respond(to: request, promise: promise)
-
-            return promise.futureResult
-                .map { response in
+            //let promise = context.eventLoop.makePromise(of: HBResponse.self)
+            Task.runDetached {
+                do {
+                    let response = try await self.responder.respond(to: request)
+                    //response.headers.add(name: "Date", value: HBDateCache.currentDate)
                     let responseHead = HTTPResponseHead(version: request.version, status: response.status, headers: response.headers)
-                    return HBHTTPResponse(head: responseHead, body: response.body)
+                    onComplete(.success(HBHTTPResponse(head: responseHead, body: response.body)))
+                } catch {
+                    onComplete(.failure(error))
                 }
-                .flatMapError { error in
-                    // then convert to valid response so this isn't treated as an error further down
-                    let response: HBHTTPResponse
-                    if let error = error as? HBHTTPResponseError {
-                        // this is a processed error so don't log as Error
-                        request.logger.info("Error: \(error)")
-                        response = error.response(version: request.version, allocator: request.allocator)
-                    } else {
-                        request.logger.error("\(error)")
-                        response = HBHTTPResponse(
-                            head: .init(version: request.version, status: .internalServerError),
-                            body: .empty
-                        )
-                    }
-                    return request.success(response)
-                }
+            }
         }
     }
 }
